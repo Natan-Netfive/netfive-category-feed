@@ -1,16 +1,16 @@
 {
- "version": "2026.11.25.1824",
- "generated_at": "2026-11-25T18:24:42+00:00",
- "sha256": "5085ec9e2735be143ccab48f5398d13ddebcc23f9a9142ce35976c0d039f74ae",
+ "version": "2026.11.25.2052",
+ "generated_at": "2026-11-25T20:52:03+00:00",
+ "sha256": "d2c27f6652b31788a9ea2b5cfd71fc75b457631c7f7a27f55d1f4308ba5b78a1",
  "categories": {
-  "Adulto": 400,
-  "Apostas": 400,
+  "Adulto": 3000,
+  "Apostas": 2000,
   "Games": 13,
-  "Jogos": 900,
+  "Jogos": 3000,
   "IA_Generativa": 53,
   "Proxy_VPN_Anonimizador": 185,
   "Redes_Sociais": 301,
   "Streaming": 400,
-  "Torrent_Pirataria": 400
+  "Torrent_Pirataria": 1500
  }
 }
