@@ -1,12 +1,12 @@
 {
- "version": "2026.11.25.1653",
- "generated_at": "2026-11-25T16:53:55+00:00",
- "sha256": "cbb3800a0aa5424b65c29f6f5125ad99d210f74a7c6f39eeb36cb33d04e1db0a",
+ "version": "2026.11.25.1714",
+ "generated_at": "2026-11-25T17:14:02+00:00",
+ "sha256": "52f9fe8c708eb5651d3de599bd4e14bc2d55b497830e3fa6ae1deffafd1989f6",
  "categories": {
   "Adulto": 400,
   "Apostas": 400,
   "Games": 13,
-  "Jogos": 400,
+  "Jogos": 1500,
   "IA_Generativa": 53,
   "Proxy_VPN_Anonimizador": 185,
   "Redes_Sociais": 301,
