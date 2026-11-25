@@ -1,0 +1,140 @@
+# Netfive Category Feed — mapeamento de categorias do app Netfive Web Filtering
+# Cada categoria combina: fontes externas (listas abertas) + curadoria Netfive (seção curated abaixo).
+# A curadoria Netfive SEMPRE entra no feed (prioridade máxima), antes de qualquer corte por tamanho.
+
+defaults:
+  max_domains: 400          # teto por categoria (ajustar após validar o limite de FQDN por regra no Falcon)
+  add_wildcard: true        # gera também *.dominio (mesmo comportamento do app v1.1)
+  popularity_top: 1000000   # usar apenas domínios presentes no Tranco Top N (quando disponível)
+
+sources:
+  ut1: "https://raw.githubusercontent.com/olbat/ut1-blacklists/master/blacklists/{list}/domains"
+  hagezi: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/{list}-onlydomains.txt"
+  tranco: "https://tranco-list.eu/top-1m.csv.zip"
+
+categories:
+  Adulto:
+    ut1: [mixed_adult]
+    hagezi: [nsfw]
+  Apostas:
+    ut1: [gambling]
+    hagezi: [gambling]
+    wildcards: ["bet.br"]          # domínio usado pelas bets autorizadas no Brasil
+  Games:
+    curated_only: true             # plataformas/lojas de games (Steam, Epic, Riot...)
+  Jogos:
+    ut1: [games]                   # jogos online / browser games
+  IA_Generativa:
+    ut1: [ai]
+  Proxy_VPN_Anonimizador:
+    ut1: [vpn, residential-proxies, strict_redirector]
+  Redes_Sociais:
+    ut1: [social_networks]
+  Streaming:
+    ut1: [audio-video, radio]
+  Torrent_Pirataria:
+    ut1: [warez]
+    hagezi: [anti.piracy]
+
+
+# Curadoria Netfive: sempre entra no feed, com prioridade máxima
+curated:
+  Apostas:
+    - bet365.com
+    - bet365.bet.br
+    - betano.com
+    - betano.bet.br
+    - sportingbet.com
+    - sportingbet.bet.br
+    - pixbet.com
+    - pixbet.bet.br
+    - estrelabet.com
+    - estrelabet.bet.br
+    - superbet.bet.br
+    - kto.com
+    - kto.bet.br
+    - novibet.bet.br
+    - betnacional.bet.br
+    - betfair.com
+    - betfair.bet.br
+    - blaze.com
+    - stake.com
+    - stake.bet.br
+    - betway.com
+    - 1xbet.com
+  Games:
+    - steampowered.com
+    - steamcommunity.com
+    - epicgames.com
+    - ea.com
+    - battle.net
+    - blizzard.com
+    - riotgames.com
+    - leagueoflegends.com
+    - playvalorant.com
+    - minecraft.net
+    - garena.com
+    - roblox.com
+    - rbxcdn.com
+  IA_Generativa:
+    - chatgpt.com
+    - openai.com
+    - claude.ai
+    - anthropic.com
+    - gemini.google.com
+    - copilot.microsoft.com
+    - perplexity.ai
+    - deepseek.com
+    - poe.com
+    - character.ai
+    - grok.com
+    - mistral.ai
+  Jogos:
+    - poki.com
+    - crazygames.com
+    - friv.com
+    - miniclip.com
+    - y8.com
+  Redes_Sociais:
+    - facebook.com
+    - instagram.com
+    - tiktok.com
+    - x.com
+    - twitter.com
+    - kwai.com
+    - pinterest.com
+    - snapchat.com
+    - threads.net
+  Streaming:
+    - netflix.com
+    - primevideo.com
+    - disneyplus.com
+    - max.com
+    - globoplay.globo.com
+    - twitch.tv
+    - spotify.com
+    - deezer.com
+
+# Domínios que NUNCA podem ser bloqueados (evita quebrar SO, M365, Google, Falcon etc.)
+never_block:
+  - microsoft.com
+  - windows.com
+  - windowsupdate.com
+  - office.com
+  - office365.com
+  - microsoftonline.com
+  - live.com
+  - azure.com
+  - google.com
+  - googleapis.com
+  - gstatic.com
+  - apple.com
+  - icloud.com
+  - amazonaws.com
+  - cloudflare.com
+  - akamai.net
+  - akamaiedge.net
+  - crowdstrike.com
+  - cloudsink.net
+  - netfive.com.br
+  - github.com
