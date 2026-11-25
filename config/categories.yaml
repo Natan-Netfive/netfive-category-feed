@@ -24,6 +24,7 @@ categories:
     curated_only: true             # plataformas/lojas de games (Steam, Epic, Riot...)
   Jogos:
     ut1: [games]                   # jogos online / browser games
+    max_domains: 1500              # portais de jogos sao muitos e pouco ranqueados: teto maior (em validacao)
   IA_Generativa:
     ut1: [ai]
   Proxy_VPN_Anonimizador:
@@ -100,6 +101,21 @@ curated:
     - y8.com
     - coolmathgames.com
     - clickjogos.com.br
+    - onlinegames.io
+    - easy-games.io
+    - kizi.com
+    - silvergames.com
+    - 1001jogos.com.br
+    - jogos360.com.br
+    - gamesgames.com
+    - agame.com
+    - armorgames.com
+    - kongregate.com
+    - addictinggames.com
+    - gamedistribution.com
+    - lagged.com
+    - gameflare.com
+    - games.co
   Redes_Sociais:
     - facebook.com
     - instagram.com
