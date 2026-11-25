@@ -1,7 +1,7 @@
 {
  "schema": "netfive.category-feed/v1",
- "version": "2026.11.25.1254",
- "generated_at": "2026-11-25T12:54:43+00:00",
+ "version": "2026.11.25.1341",
+ "generated_at": "2026-11-25T13:41:05+00:00",
  "popularity_ranking": true,
  "attribution": "Inclui dados de UT1 Blacklists (Université Toulouse Capitole, CC BY-SA 4.0) e Hagezi DNS Blocklists (GPL-3.0).",
  "categories": {
@@ -1245,6 +1245,9 @@
     "stake.bet.br",
     "betway.com",
     "1xbet.com",
+    "betesporte.bet.br",
+    "esportesdasorte.bet.br",
+    "mcgames.bet.br",
     "ay267.com",
     "netkeiba.com",
     "sportybet.com",
@@ -1619,10 +1622,7 @@
     "driverhugoverblown.com",
     "bet365.de",
     "footballpredictions.net",
-    "888casino.com",
-    "zahranicneonlinecasinobonusbezvkladu.com",
-    "betpoint.it",
-    "32red.com"
+    "888casino.com"
    ],
    "wildcards": [
     "bet.br"
@@ -1673,6 +1673,12 @@
     "*.betway.com",
     "1xbet.com",
     "*.1xbet.com",
+    "betesporte.bet.br",
+    "*.betesporte.bet.br",
+    "esportesdasorte.bet.br",
+    "*.esportesdasorte.bet.br",
+    "mcgames.bet.br",
+    "*.mcgames.bet.br",
     "ay267.com",
     "*.ay267.com",
     "netkeiba.com",
@@ -2422,17 +2428,11 @@
     "footballpredictions.net",
     "*.footballpredictions.net",
     "888casino.com",
-    "*.888casino.com",
-    "zahranicneonlinecasinobonusbezvkladu.com",
-    "*.zahranicneonlinecasinobonusbezvkladu.com",
-    "betpoint.it",
-    "*.betpoint.it",
-    "32red.com",
-    "*.32red.com"
+    "*.888casino.com"
    ],
    "count": 400,
    "fqdn_count": 801,
-   "curated": 22,
+   "curated": 25,
    "external_candidates": 715876,
    "sources": [
     "netfive:curated",
