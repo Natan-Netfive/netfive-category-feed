@@ -1,0 +1,28 @@
+name: Build Netfive Category Feed
+on:
+  schedule:
+    - cron: "17 6 * * *"   # diário, 03:17 BRT
+  workflow_dispatch: {}
+  push:
+    paths: ["config/**", "scripts/**"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - run: python scripts/build_feed.py
+      - name: Sanity check (ranking de popularidade obrigatório)
+        run: python -c "import json,sys;f=json.load(open('dist/feed.json'));sys.exit(0 if f['popularity_ranking'] else 'Tranco indisponível: feed não publicado')"
+      - name: Commit feed
+        run: |
+          git config user.name "netfive-feed-bot"
+          git config user.email "feed-bot@users.noreply.github.com"
+          git add dist/
+          git diff --cached --quiet || git commit -m "feed: $(jq -r .version dist/manifest.json)"
+          git push
