@@ -16,15 +16,17 @@ categories:
   Adulto:
     ut1: [mixed_adult]
     hagezi: [nsfw]
+    max_domains: 3000
   Apostas:
     ut1: [gambling]
     hagezi: [gambling]
     wildcards: ["bet.br"]          # domínio usado pelas bets autorizadas no Brasil
+    max_domains: 2000
   Games:
     curated_only: true             # plataformas/lojas de games (Steam, Epic, Riot...)
   Jogos:
     ut1: [games]                   # jogos online / browser games
-    max_domains: 900              # portais de jogos sao muitos e pouco ranqueados: teto maior (em validacao)
+    max_domains: 3000              # app v2.2+ divide a categoria em varias regras
   IA_Generativa:
     ut1: [ai]
   Proxy_VPN_Anonimizador:
@@ -36,6 +38,7 @@ categories:
   Torrent_Pirataria:
     ut1: [warez]
     hagezi: [anti.piracy]
+    max_domains: 1500
 
 
 # Curadoria Netfive: sempre entra no feed, com prioridade máxima
