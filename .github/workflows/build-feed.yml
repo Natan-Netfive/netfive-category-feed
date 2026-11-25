@@ -18,7 +18,8 @@ jobs:
       - run: pip install pyyaml
       - run: python scripts/build_feed.py
       - name: Sanity check (ranking de popularidade obrigatório)
-        run: python -c "import json,sys;f=json.load(open('dist/feed.json'));sys.exit(0 if f['popularity_ranking'] else 'Tranco indisponível: feed não publicado')"
+        run: |
+          python -c "import json,sys;f=json.load(open('dist/feed.json'));sys.exit(0 if f['popularity_ranking'] else 'Tranco indisponivel - feed nao publicado')"
       - name: Commit feed
         run: |
           git config user.name "netfive-feed-bot"
