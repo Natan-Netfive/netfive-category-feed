@@ -131,6 +131,7 @@ def main():
         "generated_at": now.isoformat(timespec="seconds"),
         "popularity_ranking": rank is not None,
         "attribution": "Inclui dados de UT1 Blacklists (Université Toulouse Capitole, CC BY-SA 4.0) e Hagezi DNS Blocklists (GPL-3.0).",
+        "never_block": sorted(never),
         "categories": feed_cats,
     }
     blob = json.dumps(feed, ensure_ascii=False, indent=1).encode("utf-8")
