@@ -24,7 +24,7 @@ categories:
     curated_only: true             # plataformas/lojas de games (Steam, Epic, Riot...)
   Jogos:
     ut1: [games]                   # jogos online / browser games
-    max_domains: 1500              # portais de jogos sao muitos e pouco ranqueados: teto maior (em validacao)
+    max_domains: 900              # portais de jogos sao muitos e pouco ranqueados: teto maior (em validacao)
   IA_Generativa:
     ut1: [ai]
   Proxy_VPN_Anonimizador:
