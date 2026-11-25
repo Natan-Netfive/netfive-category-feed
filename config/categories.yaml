@@ -27,7 +27,7 @@ categories:
   IA_Generativa:
     ut1: [ai]
   Proxy_VPN_Anonimizador:
-    ut1: [vpn, residential-proxies, strict_redirector]
+    ut1: [vpn, residential-proxies]
   Redes_Sociais:
     ut1: [social_networks]
   Streaming:
@@ -138,3 +138,37 @@ never_block:
   - cloudsink.net
   - netfive.com.br
   - github.com
+  # --- Segurança corporativa / ZTNA / VPN corporativa (não podem cair em Proxy_VPN) ---
+  - zscaler.com
+  - zscaler.net
+  - zscalertwo.net
+  - zscalerthree.net
+  - zscloud.net
+  - zpath.net
+  - zscalergov.net
+  - checkpoint.com
+  - paloaltonetworks.com
+  - fortinet.com
+  - forticlient.com
+  - cisco.com
+  - netskope.com
+  - cloudflareaccess.com
+  - twingate.com
+  - tailscale.com
+  - okta.com
+  - salesforce.com
+  - salesforceliveagent.com
+  - name.com
+  # --- Infraestrutura/CDN usada por sites comuns (falsos positivos das listas abertas) ---
+  - gravatar.com
+  - unity3d.com
+  - applovin.com
+  - nvidia.com
+  - fandom.com
+  - mediafire.com
+  # --- Esportes/notícias (não são apostas) ---
+  - sofascore.com
+  - mundodeportivo.com
+  - flashscore.fr
+  - flashscore.com
+  - forebet.com
