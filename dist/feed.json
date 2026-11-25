@@ -1,7 +1,7 @@
 {
  "schema": "netfive.category-feed/v1",
- "version": "2026.11.25.1646",
- "generated_at": "2026-11-25T16:46:13+00:00",
+ "version": "2026.11.25.1653",
+ "generated_at": "2026-11-25T16:53:55+00:00",
  "popularity_ranking": true,
  "attribution": "Inclui dados de UT1 Blacklists (Université Toulouse Capitole, CC BY-SA 4.0) e Hagezi DNS Blocklists (GPL-3.0).",
  "categories": {
@@ -1214,7 +1214,7 @@
    "count": 400,
    "fqdn_count": 800,
    "curated": 0,
-   "external_candidates": 81541,
+   "external_candidates": 81573,
    "sources": [
     "netfive:curated",
     "ut1:mixed_adult",
@@ -2433,7 +2433,7 @@
    "count": 400,
    "fqdn_count": 801,
    "curated": 25,
-   "external_candidates": 715876,
+   "external_candidates": 716114,
    "sources": [
     "netfive:curated",
     "ut1:gambling",
@@ -2501,6 +2501,7 @@
     "miniclip.com",
     "y8.com",
     "coolmathgames.com",
+    "clickjogos.com.br",
     "epicgames.com",
     "roblox.com",
     "playstation.net",
@@ -2893,8 +2894,7 @@
     "akinator.com",
     "hypixel.net",
     "mcpedl.com",
-    "vnggames.com",
-    "gamesindustry.biz"
+    "vnggames.com"
    ],
    "wildcards": [],
    "fqdns": [
@@ -2910,6 +2910,8 @@
     "*.y8.com",
     "coolmathgames.com",
     "*.coolmathgames.com",
+    "clickjogos.com.br",
+    "*.clickjogos.com.br",
     "epicgames.com",
     "*.epicgames.com",
     "roblox.com",
@@ -3695,13 +3697,11 @@
     "mcpedl.com",
     "*.mcpedl.com",
     "vnggames.com",
-    "*.vnggames.com",
-    "gamesindustry.biz",
-    "*.gamesindustry.biz"
+    "*.vnggames.com"
    ],
    "count": 400,
    "fqdn_count": 800,
-   "curated": 6,
+   "curated": 7,
    "external_candidates": 33645,
    "sources": [
     "netfive:curated",
@@ -7796,7 +7796,7 @@
    "count": 400,
    "fqdn_count": 800,
    "curated": 0,
-   "external_candidates": 64455,
+   "external_candidates": 64432,
    "sources": [
     "netfive:curated",
     "ut1:warez",
