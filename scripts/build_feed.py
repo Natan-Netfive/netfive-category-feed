@@ -72,6 +72,39 @@ def covered(domain, keep):
     return any(".".join(parts[i:]) in keep for i in range(1, len(parts) - 1))
 
 
+# Names on the Public Suffix List that appear in the sources (Falcon refuses globs on them)
+PUBLIC_SUFFIXES = set(game_scan.MULTI_SUFFIXES) | {
+    "bet.br", "game-host.org", "game-server.cc", "netgamers.jp", "servegame.com", "servegame.org", "vpnplus.to"}
+
+
+def make_single_safe(rank, never, min_label):
+    """
+    Decide when a domain may be deployed as ONE dotless wildcard entry, "*example.com", instead of
+    the "example.com" + "*.example.com" pair. Falcon accepts it and it matches example.com and every
+    subdomain, but also any name that merely ends with the same text ("*in.com" would block
+    linkedin.com). It is used only when:
+      - the first label has at least `min_label` characters, and
+      - no other name of the Tranco Top 1M nor of never_block ends with it (lookalike collision), and
+      - it is not a public suffix.
+    Without a Tranco ranking nothing is considered safe (every domain keeps the pair).
+    """
+    if not rank:
+        return lambda _x: False
+    known = list(rank) + list(never)
+    by_tail = {}
+    for name in known:
+        by_tail.setdefault(name[-6:], []).append(name)
+
+    def safe(x):
+        if len(x.split(".")[0]) < min_label or x in PUBLIC_SUFFIXES or x.count(".") < 1:
+            return False
+        for name in by_tail.get(x[-6:], ()):
+            if name != x and name.endswith(x) and not name.endswith("." + x):
+                return False
+        return True
+    return safe
+
+
 def main():
     d = CFG["defaults"]; src = CFG["sources"]
     never = {x.lower() for x in CFG.get("never_block", [])}
@@ -96,6 +129,7 @@ def main():
         externals[cat], used_by[cat] = external, used
     listed = set().union(*externals.values()) | {
         x.lower() for items in (CFG.get("curated") or {}).values() for x in items}
+    single_safe = make_single_safe(rank, never, d.get("single_entry_min_label", 6))
 
     for cat, spec in CFG["categories"].items():
         limit = spec.get("max_domains", d["max_domains"])
@@ -132,18 +166,30 @@ def main():
                 keep.append(x); keep_set.add(x)
 
         wild = [w.lower() for w in spec.get("wildcards", [])]
-        fqdns = []
+        # fqdns: the classic form (x + *.x) every app version reads.
+        # fqdns_single: same domains, but a safe domain becomes ONE dotless entry "*x" (read by app v3.4+,
+        # so a policy holds about twice as many domains under the sensor's ~10,600-entry limit).
+        fqdns, fqdns_single, single = [], [], 0
         for w in wild:
             fqdns.append(f"*.{w}")
+            fqdns_single.append(f"*.{w}")
         for x in keep:
             fqdns.append(x)
             if d["add_wildcard"]:
                 fqdns.append(f"*.{x}")
+            if d["add_wildcard"] and single_safe(x):
+                fqdns_single.append(f"*{x}")
+                single += 1
+            else:
+                fqdns_single.append(x)
+                if d["add_wildcard"]:
+                    fqdns_single.append(f"*.{x}")
 
         feed_cats[cat] = {
-            "domains": keep, "wildcards": wild, "fqdns": fqdns,
+            "domains": keep, "wildcards": wild, "fqdns": fqdns, "fqdns_single": fqdns_single, "fqdn_single_count": len(fqdns_single),
             "count": len(keep), "fqdn_count": len(fqdns),
             "curated": len(curated), "discovered": len(discovered), "external_candidates": len(external),
+            "single_entry": single,
             "sources": ["netfive:curated"] + used,
         }
         for x in wild:
