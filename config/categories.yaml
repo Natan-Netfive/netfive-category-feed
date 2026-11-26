@@ -26,7 +26,19 @@ categories:
     curated_only: true             # plataformas/lojas de games (Steam, Epic, Riot...)
   Jogos:
     ut1: [games]                   # jogos online / browser games
-    max_domains: 3000              # app v2.2+ divide a categoria em varias regras
+    # 3000 cortava a UT1 no rank Tranco ~265 mil (ev.io, 2048game.com... ficavam de fora).
+    # 8000 = curadoria + varredura + toda a UT1 presente no Tranco Top 1M (~6000).
+    # ~16000 FQDNs (com *.dominio) = ~11 regras de 1500: VALIDAR NO LAB antes de liberar a clientes.
+    max_domains: 8000              # app v2.2+ divide a categoria em varias regras
+    scan:                          # varredura proativa (scripts/game_scan.py), sem depender de telemetria
+      enabled: true
+      cache: scan_Jogos.json       # state/scan_Jogos.json, versionado pelo bot
+      budget_minutes: 150          # tempo máximo de varredura por execução (o job tem 300 min)
+      workers: 48                  # downloads em paralelo
+      ttl_days: 30                 # reanalisa um domínio depois de 30 dias
+      error_ttl_days: 7            # sites fora do ar: tenta de novo em 7 dias
+      cloudflare_top: 200000       # Cloudflare também olha o Top 200k que nenhuma lista cobre
+      cloudflare_budget: 6000      # consultas à Cloudflare por execução (CF_BUDGET sobrepõe)
   IA_Generativa:
     ut1: [ai]
   Proxy_VPN_Anonimizador:

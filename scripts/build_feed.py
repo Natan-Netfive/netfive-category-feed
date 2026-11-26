@@ -7,13 +7,19 @@ importação do app v1.1: category,url) e dist/manifest.json (versão + sha256).
 Ordem de prioridade por categoria:
   1. Curadoria Netfive (curated: em config/categories.yaml) -> sempre entra
   2. Wildcards de categoria (ex.: *.bet.br)               -> sempre entra
-  3. Fontes externas (UT1, Hagezi), filtradas por popularidade (Tranco) quando disponível,
+  3. Varredura proativa (scan: na categoria; scripts/game_scan.py): sites encontrados no
+     Tranco Top 1M por nome + conteúdo + categorias da Cloudflare, que nenhuma lista cobre
+  4. Fontes externas (UT1, Hagezi), filtradas por popularidade (Tranco) quando disponível,
      ordenadas pelo ranking e cortadas em max_domains.
 """
 import csv, datetime, gzip, hashlib, io, json, os, re, sys, urllib.request, zipfile
 import yaml
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import game_scan  # noqa: E402  pylint: disable=wrong-import-position
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATE = os.path.join(ROOT, "state")
 CFG = yaml.safe_load(open(os.path.join(ROOT, "config", "categories.yaml"), encoding="utf-8"))
 DIST = os.path.join(ROOT, "dist")
 DOMAIN_RE = re.compile(r"^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
@@ -72,9 +78,9 @@ def main():
     rank = load_tranco(src["tranco"], d["popularity_top"])
     cache, feed_cats, csv_rows = {}, {}, []
 
+    # 1ª passada: fontes externas de todas as categorias (a varredura ignora o que já está listado)
+    externals, used_by = {}, {}
     for cat, spec in CFG["categories"].items():
-        limit = spec.get("max_domains", d["max_domains"])
-        curated = [x.lower() for x in CFG.get("curated", {}).get(cat, []) if DOMAIN_RE.match(x.lower())]
         external, used = set(), []
         if not spec.get("curated_only"):
             for kind in ("ut1", "hagezi"):
@@ -87,6 +93,24 @@ def main():
                         except Exception as e:
                             log(f"[{kind}:{lst}] falhou: {e}"); cache[url] = set()
                     external |= cache[url]; used.append(f"{kind}:{lst}")
+        externals[cat], used_by[cat] = external, used
+    listed = set().union(*externals.values()) | {
+        x.lower() for items in (CFG.get("curated") or {}).values() for x in items}
+
+    for cat, spec in CFG["categories"].items():
+        limit = spec.get("max_domains", d["max_domains"])
+        curated = [x.lower() for x in CFG.get("curated", {}).get(cat, []) if DOMAIN_RE.match(x.lower())]
+        external, used = externals[cat], used_by[cat]
+
+        discovered = []
+        scan_cfg = spec.get("scan")
+        if scan_cfg and scan_cfg.get("enabled", True) and os.environ.get("SCAN_ENABLED", "1") != "0":
+            if rank is None:
+                log(f"[scan:{cat}] sem ranking Tranco; varredura não executada")
+            else:
+                cache_path = os.path.join(STATE, scan_cfg.get("cache", f"scan_{cat}.json"))
+                discovered = game_scan.run_scan(rank, listed, never, cache_path, scan_cfg)
+                used = used + ["netfive:scan"]
 
         external -= never
         if rank is not None:
@@ -96,6 +120,11 @@ def main():
 
         keep = [x for x in curated if x not in never]
         keep_set = set(keep)
+        for x in discovered:   # varredura: antes das listas externas, para não ser cortada
+            if len(keep) >= limit:
+                break
+            if x not in keep_set and x not in never and not covered(x, keep_set):
+                keep.append(x); keep_set.add(x)
         for x in ranked:
             if len(keep) >= limit:
                 break
@@ -114,7 +143,7 @@ def main():
         feed_cats[cat] = {
             "domains": keep, "wildcards": wild, "fqdns": fqdns,
             "count": len(keep), "fqdn_count": len(fqdns),
-            "curated": len(curated), "external_candidates": len(external),
+            "curated": len(curated), "discovered": len(discovered), "external_candidates": len(external),
             "sources": ["netfive:curated"] + used,
         }
         for x in wild:
