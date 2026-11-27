@@ -1,7 +1,7 @@
 {
  "schema": "netfive.category-feed/v1",
- "version": "2026.11.27.1643",
- "generated_at": "2026-11-27T16:43:39+00:00",
+ "version": "2026.11.27.2013",
+ "generated_at": "2026-11-27T20:13:39+00:00",
  "popularity_ranking": true,
  "attribution": "Inclui dados de UT1 Blacklists (Université Toulouse Capitole, CC BY-SA 4.0) e Hagezi DNS Blocklists (GPL-3.0).",
  "never_block": [
