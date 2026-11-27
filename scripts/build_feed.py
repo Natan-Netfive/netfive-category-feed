@@ -12,7 +12,7 @@ Ordem de prioridade por categoria:
   4. Fontes externas (UT1, Hagezi), filtradas por popularidade (Tranco) quando disponível,
      ordenadas pelo ranking e cortadas em max_domains.
 """
-import csv, datetime, gzip, hashlib, io, json, os, re, sys, urllib.request, zipfile
+import csv, datetime, hashlib, io, json, os, re, sys, urllib.request, zipfile, zlib
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -29,12 +29,23 @@ def log(*a):
     print(*a, file=sys.stderr, flush=True)
 
 
+MAX_DOWNLOAD = 200_000_000        # bytes, compressed or not (the Tranco zip is ~10 MB, lists < 100 MB)
+
+
 def fetch(url, timeout=120):
+    """Download a source list with size caps (also after gunzip: no decompression bombs)."""
+    if not url.startswith("https://"):
+        raise ValueError(f"only https sources are allowed: {url}")
     req = urllib.request.Request(url, headers={"User-Agent": "netfive-category-feed/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
-        data = r.read()
+        data = r.read(MAX_DOWNLOAD + 1)
+    if len(data) > MAX_DOWNLOAD:
+        raise ValueError(f"{url}: larger than {MAX_DOWNLOAD} bytes")
     if url.endswith(".gz") or data[:2] == b"\x1f\x8b":
-        data = gzip.decompress(data)
+        d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        data = d.decompress(data, MAX_DOWNLOAD + 1)
+        if len(data) > MAX_DOWNLOAD or d.unconsumed_tail:
+            raise ValueError(f"{url}: larger than {MAX_DOWNLOAD} bytes once decompressed")
     return data
 
 
@@ -74,7 +85,40 @@ def covered(domain, keep):
 
 # Names on the Public Suffix List that appear in the sources (Falcon refuses globs on them)
 PUBLIC_SUFFIXES = set(game_scan.MULTI_SUFFIXES) | {
-    "bet.br", "game-host.org", "game-server.cc", "netgamers.jp", "servegame.com", "servegame.org", "vpnplus.to"}
+    "bet.br", "game-host.org", "game-server.cc", "netgamers.jp", "servegame.com", "servegame.org", "vpnplus.to",
+    "azurewebsites.net", "cloudfront.net", "appspot.com", "s3.amazonaws.com", "workers.dev"}
+# Public suffixes that exist only for one kind of site: they may be listed (same list as the app's safety.py)
+BLOCKABLE_SUFFIXES = {"bet.br", "itch.io", "servegame.com", "servegame.org", "netgamers.jp", "game-host.org",
+                      "game-server.cc", "vpnplus.to"}
+# A source list adding a site this popular (Tranco rank) that was not in the previous feed is held back
+# for a human: it is how a compromised or mistaken upstream list would break thousands of customers.
+NEW_POPULAR_RANK = 1000
+
+
+def protects(name, never):
+    """The never_block entry that `name` would block, or None. The app deploys every name as "name" +
+    "*.name", so a name blocks a never_block entry when it is that entry or one of its parents. A
+    specific product under a protected domain (gemini.google.com) stays allowed; the app's own
+    safety.py adds the critical subdomains (login, update) that can never be blocked."""
+    if name in never:
+        return name
+    return next((n for n in never if n.endswith("." + name)), None)
+
+
+def acceptable(name, never):
+    """Whether a domain may go into the feed (not a public suffix, not covering a never_block name)."""
+    if "." not in name or (name in PUBLIC_SUFFIXES and name not in BLOCKABLE_SUFFIXES):
+        return False
+    return protects(name, never) is None
+
+
+def previous_feed():
+    """Domains per category of the feed currently published (empty on the first build)."""
+    try:
+        old = json.load(open(os.path.join(DIST, "feed.json"), encoding="utf-8"))
+        return {c: set(v.get("domains") or []) for c, v in (old.get("categories") or {}).items()}
+    except (OSError, ValueError):
+        return {}
 
 
 def make_single_safe(rank, never, min_label):
@@ -110,6 +154,8 @@ def main():
     never = {x.lower() for x in CFG.get("never_block", [])}
     rank = load_tranco(src["tranco"], d["popularity_top"])
     cache, feed_cats, csv_rows = {}, {}, []
+    before = previous_feed()
+    held = []
 
     # 1ª passada: fontes externas de todas as categorias (a varredura ignora o que já está listado)
     externals, used_by = {}, {}
@@ -146,18 +192,26 @@ def main():
                 discovered = game_scan.run_scan(rank, listed, never, cache_path, scan_cfg)
                 used = used + ["netfive:scan"]
 
-        external -= never
+        # never_block protects the name, its subdomains and against parents that cover it; public
+        # suffixes are never listed (except the single-purpose ones in BLOCKABLE_SUFFIXES)
+        external = {x for x in external if acceptable(x, never)}
         if rank is not None:
             ranked = sorted((x for x in external if x in rank), key=lambda x: rank[x])
         else:  # sem ranking: prioriza domínios curtos (registráveis) e ordem estável
             ranked = sorted(external, key=lambda x: (x.count("."), len(x), x))
+        old = before.get(cat)
+        if old is not None and rank is not None:
+            new_popular = [x for x in ranked if rank[x] <= NEW_POPULAR_RANK and x not in old]
+            if new_popular:
+                held += [f"{cat}: {x} (Tranco #{rank[x]})" for x in new_popular]
+                ranked = [x for x in ranked if x not in set(new_popular)]
 
-        keep = [x for x in curated if x not in never]
+        keep = [x for x in curated if acceptable(x, never)]
         keep_set = set(keep)
         for x in discovered:   # varredura: antes das listas externas, para não ser cortada
             if len(keep) >= limit:
                 break
-            if x not in keep_set and x not in never and not covered(x, keep_set):
+            if x not in keep_set and acceptable(x, never) and not covered(x, keep_set):
                 keep.append(x); keep_set.add(x)
         for x in ranked:
             if len(keep) >= limit:
@@ -165,7 +219,7 @@ def main():
             if x not in keep_set and not covered(x, keep_set):
                 keep.append(x); keep_set.add(x)
 
-        wild = [w.lower() for w in spec.get("wildcards", [])]
+        wild = [w.lower() for w in spec.get("wildcards", []) if acceptable(w.lower(), never)]
         # fqdns: the classic form (x + *.x) every app version reads.
         # fqdns_single: same domains, but a safe domain becomes ONE dotless entry "*x" (read by app v3.4+,
         # so a policy holds about twice as many domains under the sensor's ~10,600-entry limit).
@@ -217,6 +271,13 @@ def main():
                 "sha256": hashlib.sha256(blob).hexdigest(),
                 "categories": {k: v["count"] for k, v in feed_cats.items()}}
     json.dump(manifest, open(os.path.join(DIST, "manifest.json"), "w"), indent=1)
+    if held:
+        # Not an error: these stay out until a person adds them to `curated` in config/categories.yaml
+        log(f"[held] {len(held)} sites populares novos vindos de listas externas, fora do feed até revisão:")
+        for item in held[:100]:
+            log(f"  {item}")
+        with open(os.path.join(DIST, "held.txt"), "w", encoding="utf-8") as f:
+            f.write("\n".join(held) + "\n")
     log(f"OK versão {feed['version']} sha256 {manifest['sha256'][:16]}…")
 
 

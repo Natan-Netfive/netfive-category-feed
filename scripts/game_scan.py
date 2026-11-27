@@ -22,12 +22,15 @@ O cache (state/scan_cache.json) guarda o resultado de cada dominio; cada execuca
 os novos e os vencidos, dentro de um orcamento de tempo, para caber no GitHub Actions.
 """
 import datetime
+import ipaddress
 import json
 import os
 import re
+import socket
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
@@ -89,8 +92,28 @@ PLAY_PHRASES = [  # weight 2 each, at most 5 counted; any of them is a "playable
 TITLE_WORDS = re.compile(r"\b(games?|jogos?|juegos?|arcade|friv|play)\b", re.I)
 DOMAIN_STRONG = re.compile(r"(games?|jogos?|juegos?|friv|kizi|arcade|poki|y8|gamer|minijogos|clickjogos)", re.I)
 WORD_COUNT = re.compile(r"\b(games?|jogos?|juegos?)\b", re.I)
-TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S)
-META_RE = re.compile(r'<meta[^>]+name=["\'](?:description|keywords)["\'][^>]+content=["\']([^"\']*)', re.I)
+# Bounded quantifiers: the HTML is untrusted (same as the app's classifier)
+TITLE_RE = re.compile(r"<title[^>]{0,200}>(.{0,1000}?)</title>", re.I | re.S)
+META_RE = re.compile(r'<meta[^>]{0,300}name=["\'](?:description|keywords)["\'][^>]{0,300}content=["\']([^"\']{0,1000})',
+                     re.I)
+
+
+class _PublicOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow redirects only to http(s) names that resolve to public addresses."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        parts = urllib.parse.urlsplit(newurl)
+        if parts.scheme not in ("http", "https") or not parts.hostname:
+            raise urllib.error.URLError("redirect to an unsupported URL")
+        for info in socket.getaddrinfo(parts.hostname, parts.port or 443, type=socket.SOCK_STREAM):
+            ip = ipaddress.ip_address(info[4][0].split("%")[0])
+            if not ip.is_global:
+                raise urllib.error.URLError("redirect to a non-public address")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_PublicOnlyRedirects)
+_OPENER.addheaders = []
 
 
 def registrable(fqdn: str) -> str:
@@ -169,7 +192,7 @@ def fetch_page(domain: str) -> dict:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                        "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8"})
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            with _OPENER.open(req, timeout=8) as resp:
                 body = resp.read(MAX_BYTES)
                 charset = resp.headers.get_content_charset() or "utf-8"
                 return {"html": body.decode(charset, "replace"), "final_url": resp.geturl()}
@@ -269,8 +292,8 @@ def analyze(domain: str, cloudflare: Cloudflare, use_cf: bool) -> dict:
     else:
         entry = score_page(domain, page["html"])
         decision = decide(entry, cf, name_hit(domain))
-        if not entry.get("title"):
-            entry.pop("title", None)
+        # The state file is public: no text copied from third-party pages goes into it
+        entry.pop("title", None)
     entry.update(decision=decision, cf=cf)
     return entry
 
